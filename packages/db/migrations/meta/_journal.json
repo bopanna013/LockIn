@@ -29,6 +29,13 @@
       "when": 1795454263466,
       "tag": "0003_phase1_rls_and_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795455169424,
+      "tag": "0004_phase2_content_catalog_and_cms",
+      "breakpoints": true
     }
   ]
 }

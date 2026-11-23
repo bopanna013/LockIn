@@ -25,7 +25,6 @@ export default function HomePage({ params }: { params: Promise<{ locale: string 
 
 async function HomeContent() {
   const t = await getTranslations("home");
-  const nav = await getTranslations("nav");
 
   return (
     <>
@@ -48,8 +47,8 @@ async function HomeContent() {
             <Button asChild size="lg">
               <Link href="/sign-up">{t("primaryCta")}</Link>
             </Button>
-            <Button size="lg" variant="outline" disabled title={nav("comingSoon")}>
-              {t("secondaryCta")}
+            <Button asChild size="lg" variant="outline">
+              <Link href="/branches">{t("secondaryCta")}</Link>
             </Button>
           </div>
         </Container>

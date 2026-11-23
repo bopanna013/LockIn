@@ -3,3 +3,5 @@ export { withRequestContext, type RequestContext } from "./context";
 export { checkDatabase, type DatabaseHealth } from "./health";
 export { runtimeDbEnvSchema, parseEnv } from "./env";
 export * from "./identity-service";
+export * from "./catalog-service";
+export { seedCatalogContent } from "./seed/catalog";

@@ -11,7 +11,7 @@ import { MobileNav } from "./mobile-nav";
 
 /** Primary navigation. Items are disabled until their phase ships. */
 export const NAV_ITEMS = [
-  { key: "explore", href: "/branches", enabled: false },
+  { key: "explore", href: "/branches", enabled: true },
   { key: "discover", href: "/discover", enabled: false },
   { key: "roadmap", href: "/roadmap", enabled: false },
 ] as const;
@@ -35,13 +35,22 @@ export async function SiteHeader() {
           <ul className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.key}>
-                <span
-                  aria-disabled
-                  title={t("comingSoon")}
-                  className="text-muted-foreground/70 cursor-not-allowed rounded-md px-3 py-2 text-sm font-medium"
-                >
-                  {t(item.key)}
-                </span>
+                {item.enabled ? (
+                  <Link
+                    href={item.href}
+                    className="hover:bg-muted rounded-md px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    {t(item.key)}
+                  </Link>
+                ) : (
+                  <span
+                    aria-disabled
+                    title={t("comingSoon")}
+                    className="text-muted-foreground/70 cursor-not-allowed rounded-md px-3 py-2 text-sm font-medium"
+                  >
+                    {t(item.key)}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

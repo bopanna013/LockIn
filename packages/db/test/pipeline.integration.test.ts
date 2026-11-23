@@ -8,6 +8,13 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testconta
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bootstrapDatabase } from "../src/bootstrap";
+import {
+  cmsPublishContentRelease,
+  cmsUpsertBranch,
+  getPublishedBranchBySlug,
+  listPublishedBranches,
+  listPublishedEntranceExams,
+} from "../src/catalog-service";
 import { createDatabase } from "../src/client";
 import { withRequestContext } from "../src/context";
 import {
@@ -24,6 +31,7 @@ import {
 } from "../src/identity-service";
 import { runMigrations } from "../src/migrate";
 import { studentProfiles } from "../src/schema";
+import { seedCatalogContent } from "../src/seed/catalog";
 import { seedLocales } from "../src/seed/locales";
 
 const PASSWORDS = {
@@ -392,6 +400,118 @@ describe("Phase 1: identity, guardian consent, RLS isolation & append-only ledge
       expect(purgedCount).toBeGreaterThanOrEqual(1);
     } finally {
       await client.end();
+    }
+  });
+});
+
+describe("Phase 2: India B.E./B.Tech content catalog, locale fallback & CMS workflow", () => {
+  it("seeds 10 branches, 5 exams, and 8-semester roadmap templates and reads them via lockin_app", async () => {
+    const ownerConn = createDatabase(urlFor("lockin_owner", PASSWORDS.owner), { max: 1 });
+    try {
+      await seedLocales(ownerConn.db);
+      const summary = await seedCatalogContent(ownerConn.db);
+      expect(summary.branchesCount).toBe(10);
+      expect(summary.examsCount).toBe(5);
+    } finally {
+      await ownerConn.client.end();
+    }
+
+    const appConn = createDatabase(urlFor("lockin_app", PASSWORDS.app), { max: 1 });
+    try {
+      const branches = await listPublishedBranches(appConn.db, "en");
+      expect(branches.length).toBe(10);
+
+      // Requesting Kannada ("kn") before translation falls back cleanly to English ("en")
+      const knFallback = await listPublishedBranches(appConn.db, "kn");
+      expect(knFallback.length).toBe(10);
+      expect(knFallback[0]?.isFallbackTranslation).toBe(true);
+
+      const cse = await getPublishedBranchBySlug(appConn.db, "computer-science-engineering", "en");
+      expect(cse?.code).toBe("CSE");
+      expect(cse?.roadmapMilestones.length).toBe(8);
+      expect(cse?.entranceExams.map((e) => e.slug)).toContain("kcet");
+
+      const exams = await listPublishedEntranceExams(appConn.db, "en");
+      expect(exams.length).toBe(5);
+    } finally {
+      await appConn.client.end();
+    }
+  });
+
+  it("allows an editor using lockin_cms to create drafts, publish branches, and cut a new content release", async () => {
+    const cmsConn = createDatabase(urlFor("lockin_cms", PASSWORDS.cms), { max: 1 });
+    const appConn = createDatabase(urlFor("lockin_app", PASSWORDS.app), { max: 1 });
+    try {
+      const editorActor = {
+        type: "user" as const,
+        userId: "00000000-0000-0000-0000-000000000001",
+        orgId: "00000000-0000-0000-0000-000000000002",
+        globalRoles: ["editor" as const],
+      };
+
+      await cmsUpsertBranch(cmsConn.db, editorActor, {
+        slug: "mechatronics-engineering",
+        code: "MTR",
+        category: "Core & Manufacturing",
+        entrySalaryMinInr: 480000,
+        entrySalaryMaxInr: 1400000,
+        midCareerSalaryMaxInr: 3100000,
+        entranceExamSlugs: ["jee-main", "kcet", "comedk"],
+        status: "draft",
+        locale: "en",
+        title: "Mechatronics Engineering",
+        shortSummary:
+          "Synergy of mechanical design, electronics, sensors, and intelligent control.",
+        overview:
+          "Mechatronics integrates mechanical systems with embedded electronics and robotics.",
+        whoItSuits: "Students who enjoy building robots, drones, and automated physical systems.",
+        coreSubjects: ["Robotics", "Control Systems", "PLC & Automation"],
+        keySkills: ["ROS2", "Embedded C", "CAD"],
+        careerRoles: ["Robotics Engineer", "Automation Engineer"],
+        topRecruitersIndia: ["ABB", "Fanuc India", "Bosch"],
+        higherStudiesPaths: ["M.Tech Robotics & Mechatronics"],
+      });
+
+      // Draft branch must NOT appear in public listPublishedBranches
+      const publicBeforePublish = await listPublishedBranches(appConn.db, "en");
+      expect(publicBeforePublish.some((b) => b.slug === "mechatronics-engineering")).toBe(false);
+
+      // Editor promotes draft -> published and cuts release v2
+      await cmsUpsertBranch(cmsConn.db, editorActor, {
+        slug: "mechatronics-engineering",
+        code: "MTR",
+        category: "Core & Manufacturing",
+        entrySalaryMinInr: 480000,
+        entrySalaryMaxInr: 1400000,
+        midCareerSalaryMaxInr: 3100000,
+        entranceExamSlugs: ["jee-main", "kcet", "comedk"],
+        status: "published",
+        locale: "en",
+        title: "Mechatronics Engineering",
+        shortSummary:
+          "Synergy of mechanical design, electronics, sensors, and intelligent control.",
+        overview:
+          "Mechatronics integrates mechanical systems with embedded electronics and robotics.",
+        whoItSuits: "Students who enjoy building robots, drones, and automated physical systems.",
+        coreSubjects: ["Robotics", "Control Systems", "PLC & Automation"],
+        keySkills: ["ROS2", "Embedded C", "CAD"],
+        careerRoles: ["Robotics Engineer", "Automation Engineer"],
+        topRecruitersIndia: ["ABB", "Fanuc India", "Bosch"],
+        higherStudiesPaths: ["M.Tech Robotics & Mechatronics"],
+      });
+
+      const release = await cmsPublishContentRelease(cmsConn.db, editorActor, {
+        label: "2026.11 Add Mechatronics Branch",
+        publishedByEmail: "editor@lockin.home.arpa",
+      });
+      expect(release.versionNumber).toBe(2);
+      expect(release.isActive).toBe(true);
+
+      const publicAfterPublish = await listPublishedBranches(appConn.db, "en");
+      expect(publicAfterPublish.some((b) => b.slug === "mechatronics-engineering")).toBe(true);
+    } finally {
+      await cmsConn.client.end();
+      await appConn.client.end();
     }
   });
 });

@@ -12,6 +12,15 @@ export function appDb() {
   return getDatabase(url, { applicationName: "lockin-web" });
 }
 
+export function cmsDb() {
+  const env = serverEnv();
+  const url = env.DATABASE_CMS_URL ?? env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_CMS_URL is not configured");
+  }
+  return getDatabase(url, { applicationName: "lockin-cms" });
+}
+
 export async function getCurrentSession(): Promise<ActiveSession | null> {
   const env = serverEnv();
   if (!env.DATABASE_URL) return null;

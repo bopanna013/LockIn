@@ -11,6 +11,7 @@ dotenv.config({ path: resolve(fileURLToPath(new URL("../../../..", import.meta.u
 dotenv.config();
 import { createDatabase } from "../client";
 import { migrationDbEnvSchema, parseEnv } from "../env";
+import { seedCatalogContent } from "./catalog";
 import { seedLocales } from "./locales";
 
 const env = parseEnv(migrationDbEnvSchema);
@@ -21,7 +22,10 @@ const { db, client } = createDatabase(env.DATABASE_MIGRATION_URL, {
 
 try {
   const count = await seedLocales(db);
-  console.log(`✔ Seeded ${count} locales`);
+  const catalog = await seedCatalogContent(db);
+  console.log(
+    `✔ Seeded ${count} locales, release v${catalog.releaseVersion}, ${catalog.branchesCount} branches, ${catalog.examsCount} exams, and ${catalog.roadmapsCount} 8-semester roadmap templates`,
+  );
 } catch (error) {
   console.error("✖ Seed failed:", error);
   process.exitCode = 1;
