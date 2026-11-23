@@ -5,4 +5,5 @@ export { runtimeDbEnvSchema, parseEnv } from "./env";
 export * from "./identity-service";
 export * from "./catalog-service";
 export * from "./discovery-service";
+export * from "./roadmap-service";
 export { seedCatalogContent } from "./seed/catalog";

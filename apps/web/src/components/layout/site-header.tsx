@@ -13,7 +13,7 @@ import { MobileNav } from "./mobile-nav";
 export const NAV_ITEMS = [
   { key: "explore", href: "/branches", enabled: true },
   { key: "discover", href: "/discover", enabled: true },
-  { key: "roadmap", href: "/roadmap", enabled: false },
+  { key: "roadmap", href: "/roadmap", enabled: true },
 ] as const;
 
 export async function SiteHeader() {

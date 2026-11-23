@@ -1,4 +1,4 @@
-import { getLatestStudentRecommendation, getStudentProfile } from "@lockin/db";
+import { getLatestStudentRecommendation, getStudentProfile, getStudentRoadmap } from "@lockin/db";
 import { Button } from "@lockin/ui/components/button";
 import {
   Card,
@@ -48,6 +48,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         })
       : null;
 
+  const roadmapAggregate =
+    session.user.accountStatus === "active"
+      ? await getStudentRoadmap(appDb(), {
+          userId: session.user.id,
+          orgId: session.orgId,
+        })
+      : null;
+
   return (
     <Container className="py-12 sm:py-16">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -65,8 +73,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               {session.user.isMinor ? " · Minor (<18, DPDP Guardian Approved)" : ""}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button asChild>
+              <Link href="/roadmap">
+                {roadmapAggregate
+                  ? `4-Yr Roadmap (${roadmapAggregate.progress.overallPercent}%)`
+                  : "Build 4-Yr Roadmap"}
+              </Link>
+            </Button>
+            <Button asChild variant="secondary">
               <Link href="/discover">
                 {latestRec ? "Retake Fit Assessment" : "Find My Branch Fit"}
               </Link>

@@ -10,6 +10,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import type { DimensionVector, RankedBranchRecommendation } from "@lockin/domain/recommendation";
+import type { RoadmapItemCategory, RoadmapItemStatus } from "@lockin/domain/roadmap";
 import { contentReleases } from "./content";
 import { studentSchema } from "./schemas";
 import { organizations, users } from "./system";
@@ -131,3 +132,75 @@ export const studentRecommendations = studentSchema.table(
 
 export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
 export type StudentRecommendation = typeof studentRecommendations.$inferSelect;
+
+/**
+ * Student's personalized 4-year (8-semester) B.E./B.Tech roadmap.
+ * References `branch_slug` and `template_release_id` so CMS edits never silently
+ * overwrite a student's roadmap without their explicit consent.
+ */
+export const studentRoadmaps = studentSchema.table(
+  "roadmaps",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    branchSlug: varchar("branch_slug", { length: 64 }).notNull(),
+    templateReleaseId: uuid("template_release_id").references(() => contentReleases.id, {
+      onDelete: "set null",
+    }),
+    templateReleaseVersion: integer("template_release_version").notNull().default(1),
+    title: varchar("title", { length: 200 }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("student_roadmaps_org_user_idx").on(table.orgId, table.userId),
+    index("student_roadmaps_branch_idx").on(table.branchSlug),
+  ],
+);
+
+/**
+ * Individual milestone items inside a student's 8-semester roadmap.
+ * Both orgId and userId are stored on every row so RLS policies are direct and index-friendly.
+ */
+export const studentRoadmapItems = studentSchema.table(
+  "roadmap_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    roadmapId: uuid("roadmap_id")
+      .notNull()
+      .references(() => studentRoadmaps.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    semester: integer("semester").notNull(), // 1..8
+    category: varchar("category", { length: 32 }).$type<RoadmapItemCategory>().notNull(),
+    templateCode: varchar("template_code", { length: 64 }),
+    isCustom: boolean("is_custom").notNull().default(false),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description").notNull(),
+    status: varchar("status", { length: 24 }).$type<RoadmapItemStatus>().notNull().default("todo"),
+    evidenceUrl: varchar("evidence_url", { length: 500 }),
+    reflectionNotes: text("reflection_notes"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    sortOrder: integer("sort_order").notNull().default(100),
+    ...timestamps,
+  },
+  (table) => [
+    index("student_roadmap_items_roadmap_sem_idx").on(
+      table.roadmapId,
+      table.semester,
+      table.sortOrder,
+    ),
+    index("student_roadmap_items_user_idx").on(table.orgId, table.userId),
+  ],
+);
+
+export type StudentRoadmap = typeof studentRoadmaps.$inferSelect;
+export type StudentRoadmapItem = typeof studentRoadmapItems.$inferSelect;

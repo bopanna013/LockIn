@@ -23,6 +23,13 @@ import {
   submitDiscoveryAssessment,
 } from "../src/discovery-service";
 import {
+  addCustomRoadmapItem,
+  generateStudentRoadmap,
+  getStudentRoadmap,
+  syncRoadmapWithLatestRelease,
+  updateRoadmapItemProgress,
+} from "../src/roadmap-service";
+import {
   getGuardianPortalView,
   getStudentProfile,
   grantGuardianConsentWithOtp,
@@ -35,7 +42,7 @@ import {
   verifyEmailWithOtp,
 } from "../src/identity-service";
 import { runMigrations } from "../src/migrate";
-import { studentProfiles, studentRecommendations } from "../src/schema";
+import { studentProfiles, studentRecommendations, studentRoadmaps } from "../src/schema";
 import { seedCatalogContent } from "../src/seed/catalog";
 import { seedLocales } from "../src/seed/locales";
 
@@ -610,6 +617,118 @@ describe("Phase 3: discovery assessment, explainable recommendations & RLS isola
       expect(latestForStudent1?.id).toBe(rec.id);
     } finally {
       await appConn.client.end();
+    }
+  });
+});
+
+describe("Phase 4 & 5: 4-year B.E./B.Tech roadmap planner, progress tracking & release immutability", () => {
+  it("generates an 8-semester roadmap, tracks completion & custom goals, isolates via RLS, and protects existing roadmaps from CMS edits", async () => {
+    const appConn = createDatabase(urlFor("lockin_app", PASSWORDS.app), { max: 2 });
+    const cmsConn = createDatabase(urlFor("lockin_cms", PASSWORDS.cms), { max: 1 });
+    try {
+      const student = await registerUser(
+        appConn.db,
+        {
+          email: "roadmap.student@example.com",
+          fullName: "Pranav Deshpande",
+          password: "RoadmapPassword!2026",
+          dateOfBirth: "2006-09-12",
+        },
+        new Date("2026-11-23T00:00:00Z"),
+      );
+      await verifyEmailWithOtp(appConn.db, {
+        userId: student.user.id,
+        otp: student.verificationOtp,
+      });
+
+      const generated = await generateStudentRoadmap(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+        branchSlug: "computer-science-engineering",
+      });
+
+      expect(generated.items).toHaveLength(8);
+      expect(generated.progress.overallPercent).toBe(0);
+      const pinnedReleaseVersion = generated.roadmap.templateReleaseVersion;
+
+      // Mark Semester 1 item completed with evidence link and reflection
+      const sem1Item = generated.items.find((i) => i.semester === 1)!;
+      await updateRoadmapItemProgress(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+        itemId: sem1Item.id,
+        status: "completed",
+        evidenceUrl: "https://github.com/student/sem1-c-lab",
+        reflectionNotes: "Completed all data structure pointers and matrix labs.",
+      });
+
+      // Add a custom goal to Semester 3
+      const custom = await addCustomRoadmapItem(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+        semester: 3,
+        category: "certifications",
+        title: "NPTEL Design & Analysis of Algorithms (IIT Madras)",
+        description: "Complete 12-week proctored NPTEL Elite certification.",
+      });
+      expect(custom.isCustom).toBe(true);
+
+      // CMS publishes a new content release — student's roadmap stays pinned and shows update available
+      const editorActor = {
+        type: "user" as const,
+        userId: "00000000-0000-0000-0000-000000000001",
+        orgId: "00000000-0000-0000-0000-000000000002",
+        globalRoles: ["editor" as const],
+      };
+      await cmsPublishContentRelease(cmsConn.db, editorActor, {
+        label: "2026.11 Curriculum Revision v3",
+        publishedByEmail: "editor@lockin.home.arpa",
+      });
+
+      const beforeSync = await getStudentRoadmap(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+      });
+      expect(beforeSync?.roadmap.templateReleaseVersion).toBe(pinnedReleaseVersion);
+      expect(beforeSync?.hasTemplateUpdateAvailable).toBe(true);
+      expect(beforeSync?.items).toHaveLength(9);
+      expect(beforeSync?.progress.completedItems).toBe(1);
+
+      // Non-destructive sync updates release version while preserving completed items and custom goals
+      const syncResult = await syncRoadmapWithLatestRelease(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+      });
+      expect(syncResult.newReleaseVersion).toBeGreaterThan(pinnedReleaseVersion);
+
+      const afterSync = await getStudentRoadmap(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+      });
+      expect(afterSync?.hasTemplateUpdateAvailable).toBe(false);
+      expect(afterSync?.progress.completedItems).toBe(1);
+      expect(afterSync?.items.some((i) => i.isCustom)).toBe(true);
+
+      // Verify RLS blocks another user from reading student.roadmaps
+      const outsider = await registerUser(
+        appConn.db,
+        {
+          email: "outsider.roadmap@example.com",
+          fullName: "Outsider Student",
+          password: "OutsiderPassword!2026",
+          dateOfBirth: "2006-04-04",
+        },
+        new Date("2026-11-23T00:00:00Z"),
+      );
+      const visibleToOutsider = await withRequestContext(
+        appConn.db,
+        { userId: outsider.user.id, orgId: outsider.orgId },
+        async (tx) => tx.select().from(studentRoadmaps),
+      );
+      expect(visibleToOutsider).toEqual([]);
+    } finally {
+      await appConn.client.end();
+      await cmsConn.client.end();
     }
   });
 });

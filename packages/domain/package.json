@@ -9,7 +9,8 @@
     "./identity": "./src/identity/index.ts",
     "./consent": "./src/consent/index.ts",
     "./organization": "./src/organization/index.ts",
-    "./recommendation": "./src/recommendation/index.ts"
+    "./recommendation": "./src/recommendation/index.ts",
+    "./roadmap": "./src/roadmap/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
