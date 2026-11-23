@@ -9,6 +9,8 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import type { DimensionVector, RankedBranchRecommendation } from "@lockin/domain/recommendation";
+import { contentReleases } from "./content";
 import { studentSchema } from "./schemas";
 import { organizations, users } from "./system";
 
@@ -62,6 +64,7 @@ export const studentProfiles = studentSchema.table(
     interests: jsonb("interests").$type<string[]>().notNull().default([]),
     preferredStates: jsonb("preferred_states").$type<string[]>().notNull().default([]),
     careerGoalSummary: text("career_goal_summary"),
+    selectedBranchSlug: varchar("selected_branch_slug", { length: 64 }),
     onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
     ...timestamps,
   },
@@ -73,3 +76,58 @@ export const studentProfiles = studentSchema.table(
 
 export type StudentProfile = typeof studentProfiles.$inferSelect;
 export type NewStudentProfile = typeof studentProfiles.$inferInsert;
+
+/**
+ * Student discovery assessment responses. Protected by Row-Level Security on (org_id, user_id).
+ */
+export const assessmentResponses = studentSchema.table(
+  "assessment_responses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    answers: jsonb("answers").$type<Record<string, number>>().notNull(),
+    dimensionScores: jsonb("dimension_scores").$type<DimensionVector>().notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("student_assessment_responses_user_idx").on(table.orgId, table.userId, table.submittedAt),
+  ],
+);
+
+/**
+ * Explainable branch-fit recommendation snapshots. Pinned to `algorithm_version`
+ * and `content_release_id` so results are 100% reproducible.
+ */
+export const studentRecommendations = studentSchema.table(
+  "recommendations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    assessmentResponseId: uuid("assessment_response_id")
+      .notNull()
+      .references(() => assessmentResponses.id, { onDelete: "cascade" }),
+    contentReleaseId: uuid("content_release_id").references(() => contentReleases.id, {
+      onDelete: "set null",
+    }),
+    algorithmVersion: varchar("algorithm_version", { length: 32 }).notNull(),
+    dimensionScores: jsonb("dimension_scores").$type<DimensionVector>().notNull(),
+    rankedBranches: jsonb("ranked_branches").$type<RankedBranchRecommendation[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("student_recommendations_user_idx").on(table.orgId, table.userId, table.createdAt),
+  ],
+);
+
+export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
+export type StudentRecommendation = typeof studentRecommendations.$inferSelect;

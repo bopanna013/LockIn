@@ -18,6 +18,11 @@ import {
 import { createDatabase } from "../src/client";
 import { withRequestContext } from "../src/context";
 import {
+  getLatestStudentRecommendation,
+  selectStudentBranch,
+  submitDiscoveryAssessment,
+} from "../src/discovery-service";
+import {
   getGuardianPortalView,
   getStudentProfile,
   grantGuardianConsentWithOtp,
@@ -30,7 +35,7 @@ import {
   verifyEmailWithOtp,
 } from "../src/identity-service";
 import { runMigrations } from "../src/migrate";
-import { studentProfiles } from "../src/schema";
+import { studentProfiles, studentRecommendations } from "../src/schema";
 import { seedCatalogContent } from "../src/seed/catalog";
 import { seedLocales } from "../src/seed/locales";
 
@@ -511,6 +516,99 @@ describe("Phase 2: India B.E./B.Tech content catalog, locale fallback & CMS work
       expect(publicAfterPublish.some((b) => b.slug === "mechatronics-engineering")).toBe(true);
     } finally {
       await cmsConn.client.end();
+      await appConn.client.end();
+    }
+  });
+});
+
+describe("Phase 3: discovery assessment, explainable recommendations & RLS isolation", () => {
+  it("evaluates an assessment, ranks branches with explanations, pins algorithm/release version, and isolates via RLS", async () => {
+    const appConn = createDatabase(urlFor("lockin_app", PASSWORDS.app), { max: 2 });
+    try {
+      const student1 = await registerUser(
+        appConn.db,
+        {
+          email: "discover.student1@example.com",
+          fullName: "Karthik Hegde",
+          password: "DiscoverPassword!2026",
+          dateOfBirth: "2006-02-14",
+        },
+        new Date("2026-11-23T00:00:00Z"),
+      );
+      await verifyEmailWithOtp(appConn.db, {
+        userId: student1.user.id,
+        otp: student1.verificationOtp,
+      });
+
+      const rec = await submitDiscoveryAssessment(appConn.db, {
+        userId: student1.user.id,
+        orgId: student1.orgId,
+        locale: "en",
+        answers: {
+          q_elec_1: 5,
+          q_elec_2: 5,
+          q_math_1: 5,
+          q_math_2: 4,
+          q_phys_1: 4,
+          q_phys_2: 4,
+          q_prog_1: 3,
+          q_prog_2: 3,
+          q_chem_1: 1,
+          q_chem_2: 1,
+          q_bio_1: 1,
+          q_bio_2: 1,
+          q_des_1: 2,
+          q_des_2: 2,
+        },
+      });
+
+      expect(rec.algorithmVersion).toBe("2026.11-v1.0.0");
+      expect(rec.contentReleaseId).toBeTruthy();
+      expect(rec.rankedBranches.length).toBeGreaterThanOrEqual(10);
+      expect(rec.rankedBranches[0]?.branchCode).toBe("ECE");
+      expect(rec.rankedBranches[0]?.explanation).toContain("Matched because");
+
+      await selectStudentBranch(appConn.db, {
+        userId: student1.user.id,
+        orgId: student1.orgId,
+        branchSlug: rec.rankedBranches[0]!.branchSlug,
+      });
+
+      const profile1 = await getStudentProfile(appConn.db, {
+        userId: student1.user.id,
+        orgId: student1.orgId,
+      });
+      expect(profile1?.selectedBranchSlug).toBe("electronics-communication-engineering");
+
+      // Another user cannot see student1's recommendations due to RLS
+      const student2 = await registerUser(
+        appConn.db,
+        {
+          email: "discover.student2@example.com",
+          fullName: "Meera Nair",
+          password: "DiscoverPassword!2026",
+          dateOfBirth: "2006-07-19",
+        },
+        new Date("2026-11-23T00:00:00Z"),
+      );
+      await verifyEmailWithOtp(appConn.db, {
+        userId: student2.user.id,
+        otp: student2.verificationOtp,
+      });
+
+      const visibleToStudent2 = await withRequestContext(
+        appConn.db,
+        { userId: student2.user.id, orgId: student2.orgId },
+        async (tx) => tx.select().from(studentRecommendations),
+      );
+      expect(visibleToStudent2).toEqual([]);
+
+      const latestForStudent1 = await getLatestStudentRecommendation(appConn.db, {
+        userId: student1.user.id,
+        orgId: student1.orgId,
+      });
+      expect(latestForStudent1?.id).toBe(rec.id);
+    } finally {
       await appConn.client.end();
     }
   });

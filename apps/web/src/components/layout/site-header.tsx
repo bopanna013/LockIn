@@ -12,7 +12,7 @@ import { MobileNav } from "./mobile-nav";
 /** Primary navigation. Items are disabled until their phase ships. */
 export const NAV_ITEMS = [
   { key: "explore", href: "/branches", enabled: true },
-  { key: "discover", href: "/discover", enabled: false },
+  { key: "discover", href: "/discover", enabled: true },
   { key: "roadmap", href: "/roadmap", enabled: false },
 ] as const;
 

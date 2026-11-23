@@ -36,6 +36,20 @@
       "when": 1795455169424,
       "tag": "0004_phase2_content_catalog_and_cms",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795456800543,
+      "tag": "0005_phase3_assessments_and_recommendations",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795456801649,
+      "tag": "0006_phase3_student_rls",
+      "breakpoints": true
     }
   ]
 }

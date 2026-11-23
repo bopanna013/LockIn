@@ -1,4 +1,4 @@
-import { getStudentProfile } from "@lockin/db";
+import { getLatestStudentRecommendation, getStudentProfile } from "@lockin/db";
 import { Button } from "@lockin/ui/components/button";
 import {
   Card,
@@ -40,6 +40,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         })
       : null;
 
+  const latestRec =
+    session.user.accountStatus === "active"
+      ? await getLatestStudentRecommendation(appDb(), {
+          userId: session.user.id,
+          orgId: session.orgId,
+        })
+      : null;
+
   return (
     <Container className="py-12 sm:py-16">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -57,12 +65,50 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               {session.user.isMinor ? " · Minor (<18, DPDP Guardian Approved)" : ""}
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/onboarding">
-              {profile ? "Edit Academic Profile" : "Complete Onboarding"}
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link href="/discover">
+                {latestRec ? "Retake Fit Assessment" : "Find My Branch Fit"}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/onboarding">
+                {profile ? "Edit Academic Profile" : "Complete Onboarding"}
+              </Link>
+            </Button>
+          </div>
         </div>
+
+        {latestRec && (
+          <Card className="border-primary/40 bg-primary/5">
+            <CardHeader>
+              <CardTitle>
+                Top Branch Recommendations (
+                {profile?.selectedBranchSlug
+                  ? `Locked in: ${profile.selectedBranchSlug}`
+                  : "Not locked in yet"}
+                )
+              </CardTitle>
+              <CardDescription>
+                Based on your discovery assessment (Algorithm {latestRec.algorithmVersion}).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {latestRec.rankedBranches.slice(0, 3).map((b) => (
+                <div key={b.branchSlug} className="bg-card rounded-lg border p-3 text-sm">
+                  <div className="text-primary flex items-center justify-between text-xs font-bold">
+                    <span>
+                      #{b.rank} {b.branchCode}
+                    </span>
+                    <span>{b.fitScore}% Fit</span>
+                  </div>
+                  <p className="mt-1 font-semibold">{b.branchTitle}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">{b.explanation}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {session.user.accountStatus === "restricted" ? (
           <Card className="border-destructive">
