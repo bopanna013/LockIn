@@ -1,0 +1,43 @@
+{
+  "name": "lockin",
+  "private": true,
+  "description": "LOCKIN — engineering branch discovery and four-year career roadmap platform",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=26.13.0",
+    "pnpm": ">=12.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
+    "db:up": "docker compose -f infra/compose/docker-compose.dev.yml --env-file .env up -d",
+    "db:down": "docker compose -f infra/compose/docker-compose.dev.yml --env-file .env down",
+    "db:bootstrap": "pnpm --filter @lockin/db bootstrap",
+    "db:generate": "pnpm --filter @lockin/db generate",
+    "db:migrate": "pnpm --filter @lockin/db migrate",
+    "db:seed": "pnpm --filter @lockin/db seed",
+    "db:studio": "pnpm --filter @lockin/db studio"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.4.6",
+    "@types/node": "^26.6.6",
+    "dependency-cruiser": "^18.7.2",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "^2.11.11",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0"
+  }
+}

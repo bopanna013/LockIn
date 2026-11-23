@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "title": "LOCKIN — Find your engineering branch",
+    "description": "Discover the engineering branch that fits you and plan your four years of B.E./B.Tech with a personalised roadmap."
+  },
+  "a11y": {
+    "skipToContent": "Skip to main content",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "toggleTheme": "Toggle colour theme",
+    "language": "Language"
+  },
+  "nav": {
+    "explore": "Explore branches",
+    "discover": "Find my fit",
+    "roadmap": "Roadmap",
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "comingSoon": "Coming soon"
+  },
+  "home": {
+    "eyebrow": "For Class 11–12 students and B.E./B.Tech aspirants",
+    "title": "Lock in your engineering future.",
+    "subtitle": "Discover the branch that matches your interests and strengths, then follow a semester-by-semester roadmap through all four years.",
+    "primaryCta": "Find my branch",
+    "secondaryCta": "Explore branches",
+    "featuresTitle": "How LOCKIN helps",
+    "features": {
+      "discover": {
+        "title": "Discover",
+        "body": "Answer a short, honest assessment about what you enjoy and what you're good at."
+      },
+      "compare": {
+        "title": "Compare",
+        "body": "See explained matches across CSE, ECE, Mechanical, Civil and more — with careers, skills and entrance exams."
+      },
+      "plan": {
+        "title": "Plan",
+        "body": "Get an 8-semester roadmap covering academics, projects, internships and certifications."
+      },
+      "track": {
+        "title": "Track",
+        "body": "Tick off milestones, reflect each semester and always know your next step."
+      }
+    },
+    "privacyNote": "Your data stays private. Students under 18 need a parent or guardian's approval before we store any personal information."
+  },
+  "footer": {
+    "tagline": "Engineering branch discovery and four-year roadmaps.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "rights": "© {year} LOCKIN"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or has moved.",
+    "back": "Back to home"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}

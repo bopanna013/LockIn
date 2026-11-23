@@ -1,0 +1,18 @@
+{
+  "name": "@lockin/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Locale registry, fallback rules and formatting helpers",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@lockin/config": "workspace:*"
+  }
+}

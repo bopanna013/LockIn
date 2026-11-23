@@ -1,0 +1,16 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Supply-chain hardening: only explicitly approved packages may run install scripts.
+allowBuilds:
+  esbuild: true
+  "@tailwindcss/oxide": true
+  sharp: true
+  # Optional native speed-ups pulled in by Testcontainers — not needed.
+  cpu-features: false
+  ssh2: false
+  protobufjs: false
+  # Ship prebuilt platform binaries via optional deps; postinstall not required.
+  "@parcel/watcher": false
+  "@swc/core": false

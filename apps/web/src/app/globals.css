@@ -1,0 +1,11 @@
+@import "@lockin/ui/styles.css";
+
+/* Let Tailwind see classes used in this app. */
+@source "../";
+
+:root {
+  --font-latin: "Noto Sans Variable";
+  /* Loaded when Kannada / Hindi are enabled (Phase 7). */
+  --font-kannada: "Noto Sans Kannada Variable";
+  --font-devanagari: "Noto Sans Devanagari Variable";
+}

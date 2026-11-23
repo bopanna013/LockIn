@@ -1,0 +1,35 @@
+{
+  "name": "@lockin/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Database schemas (content / student / system), migrations, client and seeds",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "generate": "drizzle-kit generate",
+    "bootstrap": "tsx src/bootstrap.ts",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed/index.ts",
+    "studio": "drizzle-kit studio"
+  },
+  "devDependencies": {
+    "@lockin/config": "workspace:*",
+    "@testcontainers/postgresql": "^12.2.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
+  },
+  "dependencies": {
+    "@lockin/i18n": "workspace:*",
+    "dotenv": "^18.0.10",
+    "drizzle-orm": "^0.45.4",
+    "postgres": "^4.1.1",
+    "zod": "^4.6.7"
+  }
+}

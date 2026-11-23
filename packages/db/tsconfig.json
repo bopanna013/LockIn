@@ -1,0 +1,4 @@
+{
+  "extends": "@lockin/config/tsconfig/library.json",
+  "include": ["src", "test", "drizzle.config.ts", "vitest.integration.config.ts"]
+}
