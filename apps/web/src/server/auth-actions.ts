@@ -8,6 +8,7 @@ import {
 } from "@lockin/db/schema";
 import {
   checkRateLimit,
+  deleteStudentAccountAndData,
   grantGuardianConsentWithOtp,
   registerUser,
   requestGuardianConsent,
@@ -431,4 +432,26 @@ export async function saveStudentProfileAction(
   }
 
   redirect(`/${locale}/dashboard`);
+}
+
+export async function deleteAccountAction(formData: FormData): Promise<void> {
+  const session = await getCurrentSession();
+  const locale = ((formData.get("locale") as string) || "en").trim();
+  if (!session) {
+    redirect(`/${locale}/sign-in`);
+  }
+
+  const confirmText = ((formData.get("confirmText") as string) || "").trim();
+  if (confirmText !== "DELETE") {
+    redirect(`/${locale}/dashboard`);
+  }
+
+  const meta = await clientMeta();
+  await deleteStudentAccountAndData(appDb(), {
+    userId: session.user.id,
+    orgId: session.orgId,
+    ipAddress: meta.ipAddress,
+  });
+  await clearSessionCookie();
+  redirect(`/${locale}/sign-up`);
 }

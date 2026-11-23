@@ -22,6 +22,7 @@ import {
   selectStudentBranch,
   submitDiscoveryAssessment,
 } from "../src/discovery-service";
+import { deleteStudentAccountAndData, exportStudentPersonalData } from "../src/privacy-service";
 import {
   addCustomRoadmapItem,
   generateStudentRoadmap,
@@ -729,6 +730,59 @@ describe("Phase 4 & 5: 4-year B.E./B.Tech roadmap planner, progress tracking & r
     } finally {
       await appConn.client.end();
       await cmsConn.client.end();
+    }
+  });
+});
+
+describe("Phase 6: DPDP self-service personal data export & account erasure", () => {
+  it("exports a student's complete personal data bundle and erases their account without touching shared content", async () => {
+    const appConn = createDatabase(urlFor("lockin_app", PASSWORDS.app), { max: 2 });
+    try {
+      const student = await registerUser(
+        appConn.db,
+        {
+          email: "privacy.student@example.com",
+          fullName: "Nikhil Kamath",
+          password: "PrivacyPassword!2026",
+          dateOfBirth: "2006-01-20",
+        },
+        new Date("2026-11-23T00:00:00Z"),
+      );
+      await verifyEmailWithOtp(appConn.db, {
+        userId: student.user.id,
+        otp: student.verificationOtp,
+      });
+      await generateStudentRoadmap(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+        branchSlug: "mechanical-engineering",
+      });
+
+      const bundle = await exportStudentPersonalData(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+      });
+      expect(bundle.user.email).toBe("privacy.student@example.com");
+      expect(bundle.roadmaps).toHaveLength(1);
+      expect(bundle.roadmaps[0]?.items.length).toBe(8);
+
+      await deleteStudentAccountAndData(appConn.db, {
+        userId: student.user.id,
+        orgId: student.orgId,
+      });
+
+      await expect(
+        exportStudentPersonalData(appConn.db, {
+          userId: student.user.id,
+          orgId: student.orgId,
+        }),
+      ).rejects.toThrow(/User not found/);
+
+      // Shared content catalog remains 100% intact
+      const branchesAfterDelete = await listPublishedBranches(appConn.db, "en");
+      expect(branchesAfterDelete.length).toBeGreaterThanOrEqual(10);
+    } finally {
+      await appConn.client.end();
     }
   });
 });

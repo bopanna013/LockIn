@@ -14,6 +14,7 @@ import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { appDb, getCurrentSession } from "@/lib/session";
+import { deleteAccountAction } from "@/server/auth-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -189,6 +190,42 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             </CardContent>
           </Card>
         )}
+
+        {/* DPDP Act 2023 Self-Service Privacy & Data Portability */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Privacy, Data Portability & Right to Erasure (DPDP Act 2023)
+            </CardTitle>
+            <CardDescription>
+              Download a complete machine-readable JSON copy of all personal data in your workspace
+              or permanently erase your account. Educational catalog content in{" "}
+              <code>content.*</code> is never affected.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <Button asChild variant="outline" size="sm">
+              <a href="/api/privacy/export" download>
+                Download My Personal Data (JSON)
+              </a>
+            </Button>
+
+            <form action={deleteAccountAction} className="flex flex-wrap items-center gap-2">
+              <input type="hidden" name="locale" value={locale} />
+              <input
+                name="confirmText"
+                type="text"
+                required
+                pattern="DELETE"
+                placeholder='Type "DELETE" to confirm'
+                className="bg-background h-9 rounded-md border px-2.5 text-xs"
+              />
+              <Button type="submit" variant="destructive" size="sm">
+                Permanently Delete Account
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </Container>
   );

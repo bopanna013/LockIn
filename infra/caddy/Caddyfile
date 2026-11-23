@@ -1,0 +1,21 @@
+# ============================================================================
+# LOCKIN LAN-Only Reverse Proxy (Caddy 2)
+# Uses Caddy's built-in internal Certificate Authority (`tls internal`) for
+# RFC 8375 home network domain `lockin.home.arpa`.
+# ============================================================================
+
+lockin.home.arpa, localhost {
+  tls internal
+
+  encode zstd gzip
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    -Server
+  }
+
+  reverse_proxy web:3000 {
+    header_up X-Real-IP {remote_host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+}

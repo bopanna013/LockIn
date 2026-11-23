@@ -21,6 +21,9 @@ test-results/
 .env.*
 !.env.example
 infra/secrets/
+backups/
+*.crt
+
 
 # logs
 *.log
