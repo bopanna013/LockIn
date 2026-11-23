@@ -2,3 +2,4 @@ export { createDatabase, getDatabase, type Database } from "./client";
 export { withRequestContext, type RequestContext } from "./context";
 export { checkDatabase, type DatabaseHealth } from "./health";
 export { runtimeDbEnvSchema, parseEnv } from "./env";
+export * from "./identity-service";

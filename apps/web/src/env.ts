@@ -11,6 +11,11 @@ const serverEnvSchema = z.object({
   /** Optional during `next build` so images can be built without a database. */
   DATABASE_URL: z.string().url().optional(),
   DATABASE_CMS_URL: z.string().url().optional(),
+  SMTP_HOST: z.string().default("localhost"),
+  SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  EMAIL_FROM: z.string().default("LOCKIN <no-reply@lockin.home.arpa>"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

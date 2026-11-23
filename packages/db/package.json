@@ -26,6 +26,7 @@
     "tsx": "^4.23.15"
   },
   "dependencies": {
+    "@lockin/domain": "workspace:*",
     "@lockin/i18n": "workspace:*",
     "dotenv": "^18.0.10",
     "drizzle-orm": "^0.45.4",

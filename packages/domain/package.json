@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Pure business logic. Must not import framework, database or UI code.",
   "exports": {
-    "./shared": "./src/shared/index.ts"
+    "./shared": "./src/shared/index.ts",
+    "./identity": "./src/identity/index.ts",
+    "./consent": "./src/consent/index.ts",
+    "./organization": "./src/organization/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

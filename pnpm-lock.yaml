@@ -283,6 +283,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@lockin/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@lockin/i18n':
         specifier: workspace:*
         version: link:../i18n

@@ -15,6 +15,20 @@
       "when": 1794892642479,
       "tag": "0001_roles_grants_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795454236943,
+      "tag": "0002_phase1_identity_orgs_consent_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795454263466,
+      "tag": "0003_phase1_rls_and_append_only",
+      "breakpoints": true
     }
   ]
 }

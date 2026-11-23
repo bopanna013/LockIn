@@ -5,7 +5,7 @@ import { Container } from "@lockin/ui/components/container";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
-import { usePathname } from "@/i18n/navigation";
+import { usePathname, Link } from "@/i18n/navigation";
 
 interface MobileNavProps {
   labels: { items: string[]; signIn: string; getStarted: string; comingSoon: string };
@@ -60,10 +60,12 @@ export function MobileNav({ labels }: MobileNavProps) {
               </ul>
             </nav>
             <div className="mt-2 grid grid-cols-2 gap-2 border-t pt-4">
-              <Button variant="outline" disabled>
-                {labels.signIn}
+              <Button asChild variant="outline">
+                <Link href="/sign-in">{labels.signIn}</Link>
               </Button>
-              <Button disabled>{labels.getStarted}</Button>
+              <Button asChild>
+                <Link href="/sign-up">{labels.getStarted}</Link>
+              </Button>
             </div>
           </Container>
         </div>

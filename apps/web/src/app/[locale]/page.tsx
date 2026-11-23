@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { use } from "react";
+import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 
 const FEATURES = [
@@ -44,8 +45,8 @@ async function HomeContent() {
             {t("subtitle")}
           </p>
           <div className="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <Button size="lg" disabled title={nav("comingSoon")}>
-              {t("primaryCta")}
+            <Button asChild size="lg">
+              <Link href="/sign-up">{t("primaryCta")}</Link>
             </Button>
             <Button size="lg" variant="outline" disabled title={nav("comingSoon")}>
               {t("secondaryCta")}
