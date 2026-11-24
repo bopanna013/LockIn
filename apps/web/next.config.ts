@@ -1,6 +1,14 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import { buildSecurityHeaders } from "./src/lib/security-headers";
+
+// Load the monorepo root .env using Node 26's built-in process.loadEnvFile()
+const rootEnvPath = resolve(process.cwd(), "../../.env");
+if (existsSync(rootEnvPath) && typeof process.loadEnvFile === "function") {
+  process.loadEnvFile(rootEnvPath);
+}
 
 const isDev = process.env.NODE_ENV !== "production";
 const isHttps = (process.env.APP_URL ?? "").startsWith("https://");
